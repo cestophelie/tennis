@@ -1,3 +1,5 @@
+from time import sleep
+
 from selenium import webdriver
 import time
 from selenium.webdriver.chrome.service import Service
@@ -17,10 +19,8 @@ def scrap_rank_data():
     driver.get("https://www.flashscore.com/tennis/rankings/atp/")
 
     css_selector = ""
-    #elem = driver.find_element(By.CSS_SELECTOR, "rankingtable__href")
 
     wait = WebDriverWait(driver, 10)
-    #elem = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "a.rankingTable__href")))
     elem = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "div.rankingTable__table")))
     filtered_data = []
 
@@ -78,32 +78,9 @@ def scrap_ao_open_data():
 
     css_selector = ""
     wait = WebDriverWait(driver, 10)
+    results = []
 
     # append the match information on the 'match list'
-    '''match_id = ""
-    match_nm = ""
-    trnm_nm = ""
-    match_dt = ""
-    plyr_id_1 = ""
-    plyr_nm_1 = ""
-    plyr_id_2 = ""
-    plyr_nm_2 = ""
-    plyr_pnt_1 = ""
-    plyr_pnt_2 = ""
-
-
-    match = [
-        ["match_id", match_id],
-        ["match_nm", match_nm],
-        ["trnm_nm", trnm_nm],
-        ["match_dt", match_dt],
-        ["plyr_id_1", plyr_id_1],
-        ["plyr_nm_1", plyr_nm_1],
-        ["plyr_id_2", plyr_id_2],
-        ["plyr_nm_2", plyr_nm_2],
-        ["plyr_pnt_1", plyr_pnt_1],
-        ["plyr_pnt_2", plyr_pnt_2]
-    ]'''
 
 
     # closing the cookie banner
@@ -118,13 +95,12 @@ def scrap_ao_open_data():
         print("No cookie banner found or failed to close it:", e)
 
     # clickinig "Show more matches" until there is no more butten left on the page
+    # 1. collecting data from the results
+    '''
     while True:
         # until there is no "Show more matches" button left
         try:
             # scrolling down to
-            '''element = WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, '//a[contains(@class, "event__more event__more--static")]'))
-            )'''
             wait.until(EC.invisibility_of_element_located(
                 (By.ID, 'loading-spinner')))  # Replace with your actual spinner selector
 
@@ -140,7 +116,7 @@ def scrap_ao_open_data():
         except Exception as e:
             print("No more button on the page")
             break
-    #driver.quit()
+
     elem = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "div.sportName.tennis")))
     elem = str(elem.text).split("\n")
     print(elem)
@@ -164,10 +140,6 @@ def scrap_ao_open_data():
     print("elem 2 : ")
     print(elem_2)
 
-    trnm_nm_idx = next((i for i, s in enumerate(elem_1) if "FINAL"), -1)
-    trnm_nm = elem_1[trnm_nm_idx]
-    print("trnm_nm_idx : " + str(trnm_nm_idx))
-
     pattern = r"\b\d{2}\.\d{2}\.\s\d{2}:\d{2}\b"
 
     valid_rounds = {
@@ -181,7 +153,6 @@ def scrap_ao_open_data():
         if item in valid_rounds:
             current_round = elem_1[i]
             i += 1
-        # elif current_round and i + 4 < len(elem_1):\
         elif re.fullmatch(pattern, elem_1[i]) and i + 4 < len(elem_1):
             # Assume a valid match block: date, player1, player2, score1, score2
             # match_data = elem_1[i:i + 5]
@@ -202,11 +173,107 @@ def scrap_ao_open_data():
         else:
            i += 1  # Skip if not part of match data or no current round
 
-    # Print nicely
-    for r in results:
-        print(r)
+    current_round = None
+    i = 0
+    while i < len(elem_2):
+        item = elem_2[i].upper()
+        if item in valid_rounds:
+            current_round = elem_2[i]
+            i += 1
+        elif re.fullmatch(pattern, elem_2[i]) and i + 4 < len(elem_2):
+            # Assume a valid match block: date, player1, player2, score1, score2
+            # match_data = elem_1[i:i + 5]
+            results.append({
+                'match_id': '10001',
+                'match_nm': 'Australian Open',
+                'trnm_nm': current_round,
+                'match_dt': "2025-" + elem_2[i][3:5] + "-" + elem_2[i][0:2],
+                'match_tm': elem_2[i][7:],
+                'plyr_id_1': "",
+                'plyr_nm_1': elem_2[i + 1],
+                'plyr_id_2': "",
+                'plyr_nm_2': elem_2[i + 2],
+                'plyr_pnt_1': int(elem_2[i + 3]),
+                'plyr_pnt_2': int(elem_2[i + 4])
+            })
+            i += 5
+        else:
+            i += 1  # Skip if not part of match data or no current round
+
+    '''
+
+    # 2. clicking each
+    # wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "div.rankingTable__table")))
+    # wait.until(EC.presence_of_element_located((By.CLASS_NAME), "eventRowLink"))
+    matches = driver.find_elements(By.CLASS_NAME, "eventRowLink")
+    print("clicking each : ")
+    print(matches)
+    main_window = driver.current_window_handle
+
+    for idx, i in enumerate(matches):
+        try:
+            # only testing on the index 1, Sinner case. Later needs to be removed, the following 2 lines
+            if idx == 1:
+                return results
+
+            # scroll
+            driver.execute_script("arguments[0].scrollIntoView(true);",i)
+            driver.execute_script("arguments[0].click();",i)
+            print("clicking worked")
+            matches = driver.find_elements(By.CLASS_NAME, "eventRowLink")
+            print("log : enumerating the match index " + str(idx))
+
+            # closing the current tab
+            try:
+                main_window = driver.current_window_handle
+                # Click the link that opens a new tab
+                '''link = driver.find_element(By.CLASS_NAME, "eventrowLink")
+                link.click()'''
+
+                # Wait for new tab to appear
+                WebDriverWait(driver, 10).until(lambda d: len(d.window_handles) > 1)
+
+                # Switch to the new tab
+                new_tab = [handle for handle in driver.window_handles if handle != main_window][0]
+                driver.switch_to.window(new_tab)
+
+                # You’re now in the new tab — do whatever you want here
+                time.sleep(2)  # simulate some interaction
+
+                # Close the current tab
+                # driver.close()
+                # 3. getting the info of the match
+                match_detl_data()
+
+
+                # Switch back to original tab
+                driver.switch_to.window(main_window)
+                print("Closed new tab and returned to main tab.")
+                print("Popup closed.")
+            except Exception as e:
+                print("No popup or couldn't close it:", e)
+
+        except Exception as e:
+            print(f"Could not click element {idx}: {e}")
+            # driver.quit()
+            time.sleep(2)
+            break
+
+    # scroll down
+
+    # driver.quit()
 
     return results
+
+def match_detl_data():
+    driver = webdriver.Chrome(options=options)
+    # 여기에서 webdriver이 없다 오류 뜨는데.. 졸리다! 내일도 파이팅
+    css_selector = ""
+
+    wait = WebDriverWait(driver, 10)
+    elem = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "button.wcl-tab_y-fEC wcl-tabSelected_T--kd")))
+    print("log : match_detl_data")
+
 
 # from here connection to postgresql
 # PostgreSQL 데이터베이스에 연결
@@ -259,11 +326,9 @@ def main():
     # starting from the AUS open
     data_au_open = scrap_ao_open_data()
     data_filtered = [(match['match_id'], match['match_nm'], match['trnm_nm'], match['match_dt'], match['match_tm'], match['plyr_id_1'], match['plyr_nm_1'], match['plyr_id_2'], match['plyr_nm_2'], match['plyr_pnt_1'], match['plyr_pnt_2']) for match in data_au_open]
-    print("data filtered : ")
-    print(data_filtered[0])
     flag = "data_au_open"
-    conn = connect_db()
-    insert_data(conn, data_filtered, flag)
+    #conn = connect_db()
+    #insert_data(conn, data_filtered, flag)
 
     print("end of the main function")
 

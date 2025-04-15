@@ -266,14 +266,28 @@ def scrap_ao_open_data():
     return results
 
 def match_detl_data():
-    driver = webdriver.Chrome(options=options)
+    print("log : match_detl_data")
+    driver = webdriver.Chrome()
     # 여기에서 webdriver이 없다 오류 뜨는데.. 졸리다! 내일도 파이팅
     css_selector = ""
-
     wait = WebDriverWait(driver, 10)
-    elem = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "button.wcl-tab_y-fEC wcl-tabSelected_T--kd")))
-    print("log : match_detl_data")
+    print("log : 3")
+    # elem = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "button.wcl-tab_y-fEC wcl-tabSelected_T--kd")))
+    wait = WebDriverWait(driver, 5)
+    '''elem = wait.until(EC.presence_of_element_located(
+        (By.CSS_SELECTOR, "a.selected")  # ← 수정된 셀렉터
+    ))'''
+    '''
+    WebDriverWait(driver, 5).until(
+        EC.element_to_be_clickable((By.ID, 'onetrust-accept-btn-handler'))  # Example ID for cookie banner
+    ).click()'''
+    elem = wait.until(EC.presence_of_element_located(
+        (By.CSS_SELECTOR, "a.selected")  # ← 수정된 셀렉터
+    ))
 
+    #elem = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "a.selected")))
+    print("log : 4")
+    # 니코 잘생겼어 나 졸려 one day closer
 
 # from here connection to postgresql
 # PostgreSQL 데이터베이스에 연결

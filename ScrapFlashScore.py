@@ -243,7 +243,7 @@ def scrap_ao_open_data():
                 # Close the current tab
                 # driver.close()
                 # 3. getting the info of the match
-                match_detl_data()
+                match_detl_data(driver) # has to pass the driver otherwise, creating the new browser
 
 
                 # Switch back to original tab
@@ -251,7 +251,7 @@ def scrap_ao_open_data():
                 print("Closed new tab and returned to main tab.")
                 print("Popup closed.")
             except Exception as e:
-                print("No popup or couldn't close it:", e)
+                print("No popup or couldn't close it:", {e})
 
         except Exception as e:
             print(f"Could not click element {idx}: {e}")
@@ -265,25 +265,31 @@ def scrap_ao_open_data():
 
     return results
 
-def match_detl_data():
+def match_detl_data(driver):
     print("log : match_detl_data")
-    driver = webdriver.Chrome()
     # 여기에서 webdriver이 없다 오류 뜨는데.. 졸리다! 내일도 파이팅
     css_selector = ""
-    wait = WebDriverWait(driver, 10)
+    wait = WebDriverWait(driver, 10) # defining wait object first
     print("log : 3")
-    # elem = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "button.wcl-tab_y-fEC wcl-tabSelected_T--kd")))
-    wait = WebDriverWait(driver, 5)
-    '''elem = wait.until(EC.presence_of_element_located(
-        (By.CSS_SELECTOR, "a.selected")  # ← 수정된 셀렉터
-    ))'''
-    '''
-    WebDriverWait(driver, 5).until(
-        EC.element_to_be_clickable((By.ID, 'onetrust-accept-btn-handler'))  # Example ID for cookie banner
-    ).click()'''
-    elem = wait.until(EC.presence_of_element_located(
-        (By.CSS_SELECTOR, "a.selected")  # ← 수정된 셀렉터
-    ))
+    try:
+        stats_button = wait.until(
+            EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Stats')]"))
+        )
+        stats_button.click()
+
+        # wait
+        wait.until(EC.presence_of_element_located(
+            (By.CSS_SELECTOR, "div.stats-container")  # Replace with a real selector for new content
+        ))
+        time.sleep(5)
+        print(driver.page_source)
+        print("one day closer")
+
+        print("log : 4")
+
+        time.sleep(10)
+    except Exception as e:
+        print({e})
 
     #elem = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "a.selected")))
     print("log : 4")
